@@ -24,7 +24,7 @@ contract SmartWallet is Ownable {
     event Withdrew(address indexed recipient, uint256);
     event Transfered(address indexed sender, address indexed recipient, uint256 amount);
     event VipSet(address indexed account, bool status);
-    event Approved(address indexed owner, address indexed spender, uint256 amount);
+    event Approval(address indexed owner, address indexed spender, uint256 amount);
 
     // constructor
     constructor(address owner_, uint256 tax_) Ownable(owner_) {
@@ -60,8 +60,8 @@ contract SmartWallet is Ownable {
     }
 
     function approve(address spender, uint256 amount) public {
-        _allowances[spender][msg.sender] = amount;
-        emit Approved(msg.sender, spender, amount);
+        _allowances[msg.sender][spender] = amount;
+        emit Approval(msg.sender, spender, amount);
     }
 
     function transfer(address recipient, uint256 amount) public {
@@ -74,12 +74,13 @@ contract SmartWallet is Ownable {
     }
 
     function transferFrom(address from, address to, uint256 amount) public {
-        require(_balances[from] > 0, "SmartWallet: can not transfer 0 ether");
+        // require(_balances[from] > 0, "SmartWallet: can not transfer 0 ether");
         require(_balances[from] >= amount, "SmartWallet: Not enough Ether to transfer");
         require(to != address(0), "SmartWallet: transfer to the zero address");
-        require(_allowances[msg.sender][from] == amount, "SmartWallet: Not allowed to transfer from this adress");
+        require(_allowances[from][msg.sender] >= amount, "SmartWallet: Not allowed to transfer from this adress");
         _balances[from] -= amount;
         _balances[to] += amount;
+        _allowances[from][msg.sender] -= amount;
         emit Transfered(from, to, amount);
     }
 
@@ -106,8 +107,8 @@ contract SmartWallet is Ownable {
         return _balances[account];
     }
 
-    function allowance(address owner_, address spender) public view returns (uint256 remaining) {
-        return _allowances[spender][owner_];
+    function allowance(address owner_, address spender) public view returns (uint256) {
+        return _allowances[owner_][spender];
     }
 
     function total() public view returns (uint256) {
